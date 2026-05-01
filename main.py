@@ -17,7 +17,7 @@ def setup_logging():
     Configures named loggers for engine and training.
     Called once at startup before any other imports run logic.
     """
-    os.makedirs("logs", exist_ok=True)
+    os.makedirs("logs", exist_ok=True) # This creates the log subdirectory instead of creating everytime.
     # Engine game events
     engine_handler = logging.FileHandler("flip7_game_log.txt", mode="w")
     engine_handler.setFormatter(logging.Formatter("%(message)s"))
