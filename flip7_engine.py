@@ -110,7 +110,7 @@ class Flip7RoundEngine:
         for player in self.players:
             player.reset_round()
 
-      def draw_card(self) -> Card:
+    def draw_card(self) -> Card:
         """Pulls the top card from the deck."""
         if not self.deck:
             raise RuntimeError("Deck is empty.")
