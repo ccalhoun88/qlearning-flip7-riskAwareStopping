@@ -1,9 +1,10 @@
 # Added logging for the two loggers in the engine and the training
 import logging
+import flip7_rl as rl
 import os
 from flip7_engine import Flip7RoundEngine
 from flip7_policies import OPPONENT_CONFIGS
-from flip7_rl import load_q_table, save_q_table, q_table
+from flip7_rl import load_q_table, save_q_table
 from flip7_training import train_rl_agent
 from flip7_evaluation import (run_heuristic_baseline,
                                run_detailed_baseline,
@@ -66,7 +67,7 @@ def main():
     if os.path.exists("q_table.pkl"):
         print("Found saved Q-table — loading...")
         load_q_table()
-        print(f"Q-table loaded: {len(q_table)} states")
+        print(f"Q-table loaded: {len(rl.q_table)} states")
     else:
         print("No saved Q-table found — training from scratch...")
         training_stats = train_rl_agent(
@@ -76,6 +77,8 @@ def main():
             verbose_every=1000
         )
         plot_learning_curve(training_stats)
+    
+    print(f"Q-table states after training: {len(rl.q_table)}")
 
 
     # Evaluate RL agent
