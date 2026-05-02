@@ -4,6 +4,7 @@
 
 import logging
 import matplotlib.pyplot as plt
+import flip7_rl as rl
 from numpy import random
 from scipy import stats
 from flip7_engine import Flip7RoundEngine, run_game
@@ -11,7 +12,7 @@ from flip7_policies import (conservative_policy, greedy_policy,
                              balanced_policy, conservative_agent,
                              greedy_agent, balanced_agent,
                              OPPONENT_CONFIGS)
-from flip7_rl import q_table, get_state, select_action, load_q_table
+from flip7_rl import get_state, select_action, load_q_table
 
 # Evaluation logger
 eval_logger = logging.getLogger("flip7.evaluation")
@@ -552,7 +553,7 @@ def plot_q_value_heatmap(save_path: str = "q_value_heatmap.png") -> None:
     preference_grid = np.zeros((4, 8))   # 1=STOP, -1=DRAW, 0=unknown
     margin_grid     = np.zeros((4, 8))   # absolute margin of preference
 
-    for state, values in q_table.items():
+    for state, values in rl.q_table.items():
         score_bin, cards_drawn, gap_bin, has_second_chance = state
 
         # Only plot states with no second chance for clarity
