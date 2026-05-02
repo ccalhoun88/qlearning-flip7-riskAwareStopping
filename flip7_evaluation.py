@@ -128,10 +128,13 @@ def run_detailed_baseline(num_games: int = 5000) -> dict:
                             metrics[name]["busts"] += 1
                             player.stopped = True
 
+            # End of Round Logic
             for player in engine.players:
                 if player.frozen and not player.busted:
                     player.total_points += (player.round_points
                                           * player.multiplier)
+                    
+
 
             for player in engine.players:
                 if player.total_points >= 200:
@@ -187,6 +190,7 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
         "rl_busts":       0,
         "rl_total_banked": 0,
         "rl_stops":       0,
+        "rl_rounds":      0,
         "opponent_wins":  0
     }
 
@@ -233,10 +237,13 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
                             if player.busted:
                                 player.stopped = True
 
+            # end of round logic
             for player in engine.players:
                 if player.frozen and not player.busted:
                     player.total_points += (player.round_points
                                           * player.multiplier)
+                    
+            results["rl_rounds"] += 1
 
             for player in engine.players:
                 if player.total_points >= 200:
@@ -248,12 +255,12 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
                     break
 
     win_rate   = results["rl_wins"]   / num_games
-    bust_rate  = results["rl_busts"]  / max(num_games, 1)
+    bust_rate  = results["rl_busts"]  / max(results["rl_rounds"], 1)
     avg_banked = results["rl_total_banked"] / max(results["rl_stops"], 1)
 
     log_eval(f"\nRL Agent Evaluation over {num_games} games:")
     log_eval(f"  Win rate:        {win_rate:.3f}")
-    log_eval(f"  Bust rate:       {bust_rate:.3f}")
+    log_eval(f"  Bust rate (per round):       {bust_rate:.3f}")
     log_eval(f"  Avg pts banked:  {avg_banked:.1f}")
     log_eval(f"  Opponent wins:   {results['opponent_wins']}")
 

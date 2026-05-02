@@ -93,7 +93,7 @@ def main():
     print("  RESULTS SUMMARY")
     print("="*50)
     print(f"RL Agent win rate:     {eval_results['rl_wins']/1000:.3f}")
-    print(f"RL Agent bust rate:    {eval_results['rl_busts']/1000:.3f}")
+    print(f"RL Agent bust rate/round:    {eval_results['rl_busts']/max(eval_results['rl_rounds'], 1):.3f}")
     print(f"RL Agent avg banked:   {eval_results['rl_total_banked']/max(eval_results['rl_stops'],1):.1f}")
     print(f"t-statistic:           {test_results['t_stat']:.4f}")
     print(f"p-value:               {test_results['p_value']:.4f}")
