@@ -9,7 +9,10 @@ from flip7_evaluation import (run_heuristic_baseline,
                                run_detailed_baseline,
                                eval_rl_vs_heuristics,
                                run_statistical_tests,
-                               plot_learning_curve)
+                               plot_learning_curve,
+                               plot_bust_rate_comparison,
+                               plot_avg_points_banked,
+                               plot_q_value_heatmap)
 
 
 def setup_logging():
@@ -52,7 +55,7 @@ def main():
 
     # Heuristic Baselines
     print("\n[Step 1] Running heuristic baselines...")
-    run_detailed_baseline(num_games=5000)
+    detailed_metrics = run_detailed_baseline(num_games=5000)
     run_heuristic_baseline(num_games=5000, num_players=4)
 
 
@@ -102,6 +105,12 @@ def main():
     print("Q-table saved to q_table.pkl")
     print("Learning curve saved to learning_curve.png")
 
+    # Generating graphs
+    print("\n[Step 6] Generating images...")
+    plot_bust_rate_comparison(eval_results, detailed_metrics)
+    plot_avg_points_banked(eval_results, detailed_metrics)
+    plot_q_value_heatmap()          
+    print("All figures saved.")
 
 if __name__ == "__main__":
     main()
