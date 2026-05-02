@@ -269,7 +269,7 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
     log_eval(f"\nRL Agent Evaluation over {num_games} games:")
     log_eval(f"  {'Player':<15} {'Win Rate':>10}")
     log_eval(f"  {'-'*27}")
-    log_eval(f"  {'RL_Agent':<15} {eval_results['rl_wins']/num_games:>10.3f}")
+    log_eval(f"  {'RL_Agent':<15} {results['rl_wins']/num_games:>10.3f}")
     log_eval(f"  {'Conservative':<15} {results['conservative_wins']/num_games:>10.3f}")
     log_eval(f"  {'Greedy':<15} {results['greedy_wins']/num_games:>10.3f}")
     log_eval(f"  {'Balanced':<15} {results['balanced_wins']/num_games:>10.3f}")
