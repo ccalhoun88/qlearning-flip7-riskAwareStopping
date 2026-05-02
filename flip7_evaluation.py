@@ -4,6 +4,7 @@
 
 import logging
 import matplotlib.pyplot as plt
+from numpy import random
 from scipy import stats
 from flip7_engine import Flip7RoundEngine, run_game
 from flip7_policies import (conservative_policy, greedy_policy,
@@ -97,7 +98,12 @@ def run_detailed_baseline(num_games: int = 5000) -> dict:
             engine.reset_round()
 
             while not engine.all_players_done():
-                for idx, player in enumerate(engine.players):
+                # Add in the run_roudn shuffle logic.
+                turn_order = list(range(len(engine.players)))
+                random.shuffle(turn_order)
+
+                for idx in turn_order:
+                    player = engine.players[idx]
                     if not player.is_active():
                         continue
 
@@ -108,7 +114,7 @@ def run_detailed_baseline(num_games: int = 5000) -> dict:
                         action = conservative_policy(player)
                     elif name == "Greedy":
                         action = greedy_policy(player)
-                    else name in ["Balanced", "Balanced_2"]:
+                    elif name in ["Balanced", "Balanced_2"]:
                         action = balanced_policy(player)
 
                     if action == "STOP":
