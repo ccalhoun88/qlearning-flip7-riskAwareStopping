@@ -191,7 +191,10 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
         "rl_total_banked": 0,
         "rl_stops":       0,
         "rl_rounds":      0,
-        "opponent_wins":  0
+        "opponent_wins":  0,
+        "conservative_wins": 0,
+        "greedy_wins":       0,
+        "balanced_wins":      0
     }
 
     for _ in range(num_games):
@@ -249,8 +252,13 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
                 if player.total_points >= 200:
                     if player.name == "RL_Agent":
                         results["rl_wins"] += 1
-                    else:
-                        results["opponent_wins"] += 1
+                    elif player.name == "Conservative":
+                        results["conservative_wins"] += 1
+                    elif player.name == "Greedy":
+                        results["greedy_wins"] += 1
+                    elif player.name == "Balanced":
+                        results["balanced_wins"] += 1
+                    results["opponent_wins"] += 1
                     game_over = True
                     break
 
@@ -259,10 +267,14 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
     avg_banked = results["rl_total_banked"] / max(results["rl_stops"], 1)
 
     log_eval(f"\nRL Agent Evaluation over {num_games} games:")
-    log_eval(f"  Win rate:        {win_rate:.3f}")
-    log_eval(f"  Bust rate (per round):       {bust_rate:.3f}")
-    log_eval(f"  Avg pts banked:  {avg_banked:.1f}")
-    log_eval(f"  Opponent wins:   {results['opponent_wins']}")
+    log_eval(f"  {'Player':<15} {'Win Rate':>10}")
+    log_eval(f"  {'-'*27}")
+    log_eval(f"  {'RL_Agent':<15} {eval_results['rl_wins']/num_games:>10.3f}")
+    log_eval(f"  {'Conservative':<15} {results['conservative_wins']/num_games:>10.3f}")
+    log_eval(f"  {'Greedy':<15} {results['greedy_wins']/num_games:>10.3f}")
+    log_eval(f"  {'Balanced':<15} {results['balanced_wins']/num_games:>10.3f}")
+    log_eval(f"  Bust rate (per round):       {bust_rate:>10.3f}")
+    log_eval(f"  Avg pts banked:  {avg_banked:>10.1f}")
 
     return results
 
@@ -415,3 +427,206 @@ def plot_learning_curve(training_stats: dict,
     plt.savefig(save_path, dpi=150)
     plt.show()
     log_eval(f"Learning curve saved to {save_path}")
+
+# Bust Rate Comparison
+# This is my design, but logic is from Claude.ai
+def plot_bust_rate_comparison(eval_results: dict,
+                               detailed_metrics: dict,
+                               num_games: int = 1000,
+                               save_path: str = "bust_rate_comparison.png") -> None:
+    """
+    Bar chart comparing bust rate per round across all players.
+    RL agent bust rate from eval_rl_vs_heuristics.
+    Heuristic bust rates from run_detailed_baseline.
+    """
+    players = ["RL Agent", "Conservative", "Greedy", "Balanced"]
+    
+    # RL bust rate already calculated per round
+    rl_bust_rate = (eval_results["rl_busts"] / 
+                   max(eval_results["rl_rounds"], 1))
+    
+    # Heuristic bust rates from detailed baseline metrics
+    bust_rates = [
+        rl_bust_rate,
+        detailed_metrics["Conservative"]["busts"] / 
+            max(detailed_metrics["Conservative"]["rounds_played"], 1),
+        detailed_metrics["Greedy"]["busts"] / 
+            max(detailed_metrics["Greedy"]["rounds_played"], 1),
+        detailed_metrics["Balanced"]["busts"] / 
+            max(detailed_metrics["Balanced"]["rounds_played"], 1)
+    ]
+
+    colors = ["steelblue", "coral", "mediumseagreen", "mediumpurple"]
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    bars = ax.bar(players, bust_rates, color=colors, 
+                  width=0.5, edgecolor="white", linewidth=1.5)
+
+    # Add value labels on top of each bar
+    for bar, rate in zip(bars, bust_rates):
+        ax.text(bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.002,
+                f"{rate:.3f}",
+                ha="center", va="bottom", fontsize=11, fontweight="bold")
+
+    ax.set_xlabel("Player", fontsize=12)
+    ax.set_ylabel("Bust Rate (per round)", fontsize=12)
+    ax.set_title("Bust Rate Comparison — RL Agent vs Heuristics",
+                 fontsize=14, fontweight="bold")
+    ax.set_ylim(0, max(bust_rates) * 1.2)
+    ax.grid(axis="y", alpha=0.3)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.show()
+    log_eval(f"Bust rate comparison saved to {save_path}")
+
+
+def plot_avg_points_banked(eval_results: dict,
+                            detailed_metrics: dict,
+                            save_path: str = "avg_points_banked.png") -> None:
+    """
+    Bar chart comparing average points banked per stop across all players.
+    Shows the scoring efficiency gap between RL agent and heuristics.
+    """
+    players = ["RL Agent", "Conservative", "Greedy", "Balanced"]
+
+    rl_avg_banked = (eval_results["rl_total_banked"] /
+                    max(eval_results["rl_stops"], 1))
+
+    avg_banked = [
+        rl_avg_banked,
+        detailed_metrics["Conservative"]["total_banked"] /
+            max(detailed_metrics["Conservative"]["stops"], 1),
+        detailed_metrics["Greedy"]["total_banked"] /
+            max(detailed_metrics["Greedy"]["stops"], 1),
+        detailed_metrics["Balanced"]["total_banked"] /
+            max(detailed_metrics["Balanced"]["stops"], 1)
+    ]
+
+    colors = ["steelblue", "coral", "mediumseagreen", "mediumpurple"]
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    bars = ax.bar(players, avg_banked, color=colors,
+                  width=0.5, edgecolor="white", linewidth=1.5)
+
+    # Value labels on top of each bar
+    for bar, val in zip(bars, avg_banked):
+        ax.text(bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.3,
+                f"{val:.1f}",
+                ha="center", va="bottom", fontsize=11, fontweight="bold")
+
+    # Add reference line at RL agent's value for visual comparison
+    ax.axhline(y=rl_avg_banked, color="steelblue", linestyle="--",
+               alpha=0.5, label=f"RL Agent baseline ({rl_avg_banked:.1f})")
+
+    ax.set_xlabel("Player", fontsize=12)
+    ax.set_ylabel("Avg Points Banked Per Stop", fontsize=12)
+    ax.set_title("Scoring Efficiency — Average Points Banked Per Stop",
+                 fontsize=14, fontweight="bold")
+    ax.set_ylim(0, max(avg_banked) * 1.2)
+    ax.legend(fontsize=10)
+    ax.grid(axis="y", alpha=0.3)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.show()
+    log_eval(f"Avg points banked chart saved to {save_path}")
+
+
+def plot_q_value_heatmap(save_path: str = "q_value_heatmap.png") -> None:
+    """
+    Heatmap showing agent's preferred action by score bin and gap bin.
+    Color represents preference margin — red=STOP, blue=DRAW.
+    Only plots states the agent actually visited during training.
+    """
+    import numpy as np
+
+    # Initialize grids for preference and margin
+    # Rows = gap bins (0-3), Cols = score bins (0-7)
+    preference_grid = np.zeros((4, 8))   # 1=STOP, -1=DRAW, 0=unknown
+    margin_grid     = np.zeros((4, 8))   # absolute margin of preference
+
+    for state, values in q_table.items():
+        score_bin, cards_drawn, gap_bin, has_second_chance = state
+
+        # Only plot states with no second chance for clarity
+        if has_second_chance:
+            continue
+
+        # Aggregate across cards_drawn by taking strongest signal
+        draw_q = values["DRAW"]
+        stop_q = values["STOP"]
+        margin = abs(draw_q - stop_q)
+
+        # Only update if this state has stronger signal than current
+        if margin > margin_grid[gap_bin, score_bin]:
+            margin_grid[gap_bin, score_bin]     = margin
+            preference_grid[gap_bin, score_bin] = (
+                1 if stop_q > draw_q else -1
+            )
+
+    # Build color grid — red=STOP, blue=DRAW, white=unknown
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Custom colormap — blue for DRAW, white for unknown, red for STOP
+    import matplotlib.colors as mcolors
+    cmap = mcolors.LinearSegmentedColormap.from_list(
+        "draw_stop",
+        ["steelblue", "white", "crimson"]
+    )
+
+    im = ax.imshow(preference_grid * margin_grid,
+                   cmap=cmap, aspect="auto",
+                   vmin=-1.0, vmax=1.0)
+
+    # Colorbar
+    cbar = plt.colorbar(im, ax=ax)
+    cbar.set_label("← DRAW preference | STOP preference →",
+                   fontsize=11)
+
+    # Axis labels
+    score_labels = [
+        "0-12", "13-18", "19-23", "24-29",
+        "30-36", "37-42", "43-49", "50+"
+    ]
+    gap_labels = [
+        "Ahead\n(>15pts)",
+        "Even\n(-15 to +15)",
+        "Mod Behind\n(16-45pts)",
+        "Far Behind\n(45+pts)"
+    ]
+
+    ax.set_xticks(range(8))
+    ax.set_xticklabels(score_labels, fontsize=10)
+    ax.set_yticks(range(4))
+    ax.set_yticklabels(gap_labels, fontsize=10)
+
+    ax.set_xlabel("Round Score Bin", fontsize=12)
+    ax.set_ylabel("Position vs Leading Opponent", fontsize=12)
+    ax.set_title(
+        "Q-Value Heatmap — Learned Action Preferences by State\n"
+        "(Red=STOP, Blue=DRAW, White=Unvisited/Uncertain)",
+        fontsize=13, fontweight="bold"
+    )
+
+    # Annotate cells with margin values
+    for gap in range(4):
+        for score in range(8):
+            val = preference_grid[gap, score] * margin_grid[gap, score]
+            if val != 0:
+                label = f"{'S' if val > 0 else 'D'}\n{abs(val):.2f}"
+                ax.text(score, gap, label,
+                        ha="center", va="center",
+                        fontsize=8,
+                        color="white" if abs(val) > 0.4 else "black")
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.show()
+    log_eval(f"Q-value heatmap saved to {save_path}")
