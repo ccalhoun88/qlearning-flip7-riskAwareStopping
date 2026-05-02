@@ -288,7 +288,13 @@ def run_round(engine: Flip7RoundEngine, policies: dict) -> None:
     engine.reset_round()
 
     while not engine.all_players_done():
-        for idx, player in enumerate(engine.players):
+        # Randomizing turn order to see if it changes evaluation results of each round
+        # claude.ai assisted for randomization of turn
+        turn_order = list(range(len(engine.players)))
+        random.shuffle(turn_order)
+        
+        for idx in turn_order:
+            player = engine.players[idx]
             if not player.is_active():
                 continue
 
