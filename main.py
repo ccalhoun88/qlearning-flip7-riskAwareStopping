@@ -95,18 +95,29 @@ def main():
 
 
     # Summary
-    print("\n" + "="*50)
-    print("  RESULTS SUMMARY")
-    print("="*50)
-    print(f"RL Agent win rate:     {eval_results['rl_wins']/1000:.3f}")
-    print(f"RL Agent bust rate/round:    {eval_results['rl_busts']/max(eval_results['rl_rounds'], 1):.3f}")
-    print(f"RL Agent avg banked:   {eval_results['rl_total_banked']/max(eval_results['rl_stops'],1):.1f}")
-    print(f"t-statistic:           {test_results['t_stat']:.4f}")
-    print(f"p-value:               {test_results['p_value']:.4f}")
-    print(f"Significant (p<0.05):  {test_results['p_value'] < 0.05}")
-    print("\nAll logs saved to /logs directory")
-    print("Q-table saved to q_table.pkl")
-    print("Learning curve saved to learning_curve.png")
+    print(f"\n{'='*50}")
+    print(f"  RESULTS SUMMARY")
+    print(f"{'='*50}")
+    print(f"RL Agent win rate:         {eval_results['rl_wins']/1000:.3f}")
+    print(f"RL bust rate/round:        "
+          f"{eval_results['rl_busts']/max(eval_results['rl_rounds'],1):.3f}")
+    print(f"RL avg pts banked:         "
+          f"{eval_results['rl_total_banked']/max(eval_results['rl_stops'],1):.1f}")
+    print(f"\nStatistical Test (k=10 folds):")
+    print(f"RL mean win rate:          "
+          f"{test_results['mean_rl']:.3f} +/- {test_results['std_rl']:.3f}")
+    print(f"Greedy mean win rate:      {test_results['mean_greedy']:.3f}")
+    print(f"Conservative mean:         {test_results['mean_conservative']:.3f}")
+    print(f"Balanced mean:             {test_results['mean_balanced']:.3f}")
+    print(f"95% CI:                    "
+          f"({test_results['ci'][0]:.3f}, {test_results['ci'][1]:.3f})")
+    print(f"t-statistic:               {test_results['t_stat']:.4f}")
+    print(f"p-value (two-sided):       {test_results['p_value']:.4f}")
+    print(f"p-value (one-sided):       {test_results['p_value_one']:.4f}")
+    print(f"Significant (p<0.05):      {test_results['p_value'] < 0.05}")
+    print(f"\nAll logs saved to /logs directory")
+    print(f"Q-table saved to q_table.pkl")
+    print(f"Learning curve saved to learning_curve.png")
 
     # Generating graphs
     print("\n[Step 6] Generating images...")
