@@ -5,9 +5,11 @@
 import logging
 import matplotlib.pyplot as plt
 import flip7_rl as rl
-from numpy import random
+import collections
+import random
 from scipy import stats
 from flip7_engine import Flip7RoundEngine, run_game
+from flip7_training import train_rl_agent
 from flip7_policies import (conservative_policy, greedy_policy,
                              balanced_policy, conservative_agent,
                              greedy_agent, balanced_agent,
@@ -284,7 +286,7 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
 # Statistical significance test
 # ----------------------------
 
-def run_statistical_tests(num_folds: int = 5,
+def run_statistical_tests(num_folds: int = 10,
                           games_per_fold: int = 200) -> dict:
     """
     5.3.26 Update: Switching to K=10.
@@ -311,7 +313,7 @@ def run_statistical_tests(num_folds: int = 5,
 
         # Reset and retrain agent from scratch
         random.seed(seed)
-        rl.q_table = defaultdict(lambda: {"DRAW": 0.0, "STOP": 0.0})
+        rl.q_table = collections.defaultdict(lambda: {"DRAW": 0.0, "STOP": 0.0})
         rl.EPSILON = 1.0
 
         train_rl_agent(

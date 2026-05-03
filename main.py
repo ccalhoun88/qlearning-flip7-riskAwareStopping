@@ -2,6 +2,7 @@
 import logging
 import flip7_rl as rl
 import os
+import shutil
 from flip7_engine import Flip7RoundEngine
 from flip7_policies import OPPONENT_CONFIGS
 from flip7_rl import load_q_table, save_q_table
@@ -78,27 +79,32 @@ def main():
         )
         plot_learning_curve(training_stats)
     
+    shutil.copy("q_table.pkl", "q_table_original.pkl")
+    print("Original Q-table backed up to q_table_original.pkl")
     print(f"Q-table states after training: {len(rl.q_table)}")
 
 
     # Evaluate RL agent
     print("\n[Step 3] Evaluating RL agent...")
-    eval_results = eval_rl_vs_heuristics(num_games=1000)
+    eval_results = eval_rl_vs_heuristics(num_games=2000)
 
 
     # Statistical Tests
     print("\n[Step 4] Running statistical significance tests...")
     test_results = run_statistical_tests(
-        num_folds=5,
+        num_folds=10,
         games_per_fold=200
     )
-
+    # Restore original Q-table after statistical tests
+    shutil.copy("q_table_original.pkl", "q_table.pkl")
+    load_q_table()
+    print(f"Original Q-table restored: {len(rl.q_table)} states")
 
     # Summary
     print(f"\n{'='*50}")
     print(f"  RESULTS SUMMARY")
     print(f"{'='*50}")
-    print(f"RL Agent win rate:         {eval_results['rl_wins']/1000:.3f}")
+    print(f"RL Agent win rate:         {eval_results['rl_wins']/2000:.3f}")
     print(f"RL bust rate/round:        "
           f"{eval_results['rl_busts']/max(eval_results['rl_rounds'],1):.3f}")
     print(f"RL avg pts banked:         "
