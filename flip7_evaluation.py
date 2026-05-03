@@ -287,8 +287,11 @@ def eval_rl_vs_heuristics(num_games: int = 1000) -> dict:
 def run_statistical_tests(num_folds: int = 5,
                           games_per_fold: int = 200) -> dict:
     """
-    5x2 cross-validation paired t-test comparing RL agent
+    5.3.26 Update: Switching to K=10.
+    Each fold retrains the RL agent from scratch on a different random seed, then evaluates on a separate set of games.
+    Cross-validation paired t-test comparing RL agent
     win rate against best heuristic baseline (Greedy).
+    Utilized Claude.ai to help update stat test logic.
 
     Required by rubric — reports t-statistic and p-value.
     H0: RL agent win rate == Greedy win rate
@@ -296,10 +299,34 @@ def run_statistical_tests(num_folds: int = 5,
     """
     rl_scores      = []
     greedy_scores  = []
+    conservative_scores = []
+    balanced_scores     = []
+
+    seeds = [42, 123, 456, 789, 1011,
+             2024, 3141, 7777, 8888, 9999]
 
     for fold in range(num_folds):
-        # RL agent performance
-        rl_wins = 0
+        seed = seeds[fold]
+        log_eval(f"\nFold {fold+1}/10 — Training with seed {seed}...")
+
+        # Reset and retrain agent from scratch
+        random.seed(seed)
+        rl.q_table = defaultdict(lambda: {"DRAW": 0.0, "STOP": 0.0})
+        rl.EPSILON = 1.0
+
+        train_rl_agent(
+            num_games=10000,
+            num_opponents=3,
+            win_threshold=200,
+            verbose_every=10000  # only log final snapshot per fold
+        )
+      
+        # Evaluate retrained RL agent performance
+        rl_wins           = 0
+        greedy_wins       = 0
+        conservative_wins = 0
+        balanced_wins     = 0
+      
         for _ in range(games_per_fold):
             engine    = Flip7RoundEngine(OPPONENT_CONFIGS[3])
             game_over = False
@@ -348,49 +375,106 @@ def run_statistical_tests(num_folds: int = 5,
                     if player.total_points >= 200:
                         if player.name == "RL_Agent":
                             rl_wins += 1
+                        elif player.name == "Greedy":
+                            greedy_wins += 1
+                        elif player.name == "Conservative":
+                            conservative_wins += 1
+                        elif player.name == "Balanced":
+                            balanced_wins += 1
                         game_over = True
                         break
 
-        # Greedy agent performance in same config
-        greedy_wins = 0
-        policies = {
-            0: greedy_agent,
-            1: conservative_agent,
-            2: balanced_agent,
-            3: balanced_agent
-        }
+        # Greedy Baseline Evaluation
+        greedy_baseline_wins = 0
         for _ in range(games_per_fold):
             result = run_game(
                 player_names=["Greedy", "Conservative",
                               "Balanced", "Balanced_2"],
-                policies=policies,
+                policies = {
+                    0: greedy_agent,
+                    1: conservative_agent,
+                    2: balanced_agent,
+                    3: balanced_agent
+                },
                 win_threshold=200,
                 verbose=False
             )
             if result["winner"] == "Greedy":
-                greedy_wins += 1
+                greedy_baseline_wins += 1
 
-        rl_scores.append(rl_wins     / games_per_fold)
-        greedy_scores.append(greedy_wins / games_per_fold)
+# Record fold results
+        rl_rate           = rl_wins           / games_per_fold
+        greedy_rate       = greedy_wins        / games_per_fold
+        conservative_rate = conservative_wins  / games_per_fold
+        balanced_rate     = balanced_wins      / games_per_fold
+        greedy_base_rate  = greedy_baseline_wins / games_per_fold
 
-        log_eval(f"Fold {fold+1}: RL={rl_wins/games_per_fold:.3f} "
-                 f"Greedy={greedy_wins/games_per_fold:.3f}")
+        rl_scores.append(rl_rate)
+        greedy_scores.append(greedy_base_rate)
+        conservative_scores.append(conservative_rate)
+        balanced_scores.append(balanced_rate)
 
-    t_stat, p_value = stats.ttest_rel(rl_scores, greedy_scores)
+        log_eval(f"Fold {fold+1} complete: "
+                 f"RL={rl_rate:.3f} | "
+                 f"Greedy={greedy_rate:.3f} | "
+                 f"Conservative={conservative_rate:.3f} | "
+                 f"Balanced={balanced_rate:.3f}")
 
-    log_eval(f"\nPaired t-test results:")
+    # --- Statistical tests ---
+    t_stat,     p_value     = stats.ttest_rel(rl_scores, greedy_scores)
+    t_stat_one, p_value_one = stats.ttest_rel(
+        rl_scores, greedy_scores, alternative='less'
+    )
+
+    # Summary statistics
+    mean_rl           = sum(rl_scores)           / num_folds
+    mean_greedy       = sum(greedy_scores)        / num_folds
+    mean_conservative = sum(conservative_scores)  / num_folds
+    mean_balanced     = sum(balanced_scores)      / num_folds
+    std_rl            = (sum((x - mean_rl)**2
+                        for x in rl_scores) / num_folds) ** 0.5
+
+    # 95% confidence interval
+    ci = stats.t.interval(0.95,
+                          df=num_folds - 1,
+                          loc=mean_rl,
+                          scale=stats.sem(rl_scores))
+
+    log_eval(f"\n{'='*50}")
+    log_eval(f"  STATISTICAL TEST RESULTS (k=10 folds)")
+    log_eval(f"{'='*50}")
     log_eval(f"  H0: RL win rate == Greedy win rate")
-    log_eval(f"  t-statistic: {t_stat:.4f}")
-    log_eval(f"  p-value:     {p_value:.4f}")
-    log_eval(f"  Significant (p<0.05): {p_value < 0.05}")
+    log_eval(f"  H1: RL win rate != Greedy win rate")
+    log_eval(f"\n  Mean Win Rates across 10 folds:")
+    log_eval(f"  {'Agent':<15} {'Mean Win Rate':>15}")
+    log_eval(f"  {'-'*32}")
+    log_eval(f"  {'RL Agent':<15} {mean_rl:>14.3f} +/- {std_rl:.3f}")
+    log_eval(f"  {'Greedy':<15} {mean_greedy:>15.3f}")
+    log_eval(f"  {'Conservative':<15} {mean_conservative:>15.3f}")
+    log_eval(f"  {'Balanced':<15} {mean_balanced:>15.3f}")
+    log_eval(f"\n  95% Confidence Interval: "
+             f"({ci[0]:.3f}, {ci[1]:.3f})")
+    log_eval(f"  t-statistic:             {t_stat:.4f}")
+    log_eval(f"  p-value (two-sided):     {p_value:.4f}")
+    log_eval(f"  p-value (one-sided):     {p_value_one:.4f}")
+    log_eval(f"  Significant (p<0.05):    {p_value < 0.05}")
 
     return {
-        "t_stat":       t_stat,
-        "p_value":      p_value,
-        "rl_scores":    rl_scores,
-        "greedy_scores": greedy_scores
+        "t_stat":             t_stat,
+        "p_value":            p_value,
+        "p_value_one":        p_value_one,
+        "mean_rl":            mean_rl,
+        "std_rl":             std_rl,
+        "ci":                 ci,
+        "mean_greedy":        mean_greedy,
+        "mean_conservative":  mean_conservative,
+        "mean_balanced":      mean_balanced,
+        "rl_scores":          rl_scores,
+        "greedy_scores":      greedy_scores,
+        "conservative_scores": conservative_scores,
+        "balanced_scores":    balanced_scores
     }
-
+        
 
 # ----------------------------
 # Learning curve plot
