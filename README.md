@@ -80,10 +80,10 @@ Training runs 10,000 games and takes approximately 3-5 minutes.
 
 | Agent         | Win Rate | Avg Points Banked | Bust Rate |
 |---------------|----------|-------------------|-----------|
-| Conservative  | TBD      | 21.6              | 0.046     |
-| Greedy        | TBD      | 34.0              | 0.090     |
-| Balanced      | TBD      | 29.7              | 0.076     |
-| RL Agent      | TBD      | TBD               | TBD       |
+| Conservative  | 0.266    | 21.6              | 0.046     |
+| Greedy        | 0.327    | 34.0              | 0.090     |
+| Balanced      | 0.254    | 29.7              | 0.076     |
+| RL Agent      | 0.153    | 18.4              | 0.110     |
 
 *4-player baseline results — update after running main.py*
 
