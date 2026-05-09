@@ -108,13 +108,20 @@ engine = Flip7RoundEngine(player_names, seed=42)
 
 ## GenAI Usage
 
-This project used Claude (Anthropic) as a development assistant for:
-- Initial scaffolding of the game simulator
-- Debugging training loop logic
-- Guidance on Q-learning architecture decisions
+This project used Claude (Anthropic), ChatGPT 5.5, and VSCode Gemini Copilot as a development assistant for:
+- Initial scaffolding of the game simulator – ChatGPT
+	Original Prompt:
+Create a lightweight custom Python simulation environment for the stochastic card game Flip 7 to support future reinforcement learning experiments using tabular Q-learning. Use simple card representations (integers and strings) instead of complex object-oriented card classes. The environment should include deck creation, player state tracking, round scoring, duplicate-card bust logic, special card handling (Freeze, Draw 3, Second Chance, multipliers, and bonus cards), heuristic-driven opponent behaviors (Conservative, Greedy, and Balanced), and multiplayer round flow for 2–4 players. Implement the environment using a Gym-style structure with reset(), step(), and state representation concepts, but avoid requiring OpenAI Gym itself. The initial focus should be on round-level training episodes rather than full-game simulations to simplify reward assignment and accelerate reinforcement learning experimentation
+- Debugging training loop logic 
+- Guidance on Q-learning architecture decisions 
+- Debugging Q-learning State Space
+- Debugging Heuristic Baseline Evaluation logic
+- Conceptual guidance on Q-Learning Design Decisions
+- LaTex and Overleaf formatting
+ - Report Writing Refinement
+All technical design decisions, hyperparameter choices, reward function design, and analytical conclusions are my own work.
+In regards to writing refinement, Claude was used throughout the report drafting process with an initial draft, follow up targeted questions from Claude, which was then refined and into IEEE-formatted academic prose. All technical content, design decisions, analytical conclusions and observations originate from my own work and understanding.
 
-All design decisions, hyperparameter choices, reward function design,
-and analytical conclusions are the author's own work.
 
 ---
 
